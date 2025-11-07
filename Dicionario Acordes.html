@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Dicionário Visual de Acordes</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-light:#f5f2ec; --card:#ffffff; --muted:#5b4b3b; --accent:#2b6777; --accent-strong:#22525f;
+    --white:#ffffff; --black:#000000;
+    --fam-maj:#6fa8dc; --fam-min:#b39ddb; --fam-7:#f6b26b; --fam-maj7:#93c47d; --fam-m7:#f4cccc; --fam-m7b5:#ffd966; --fam-dim:#e06666;
+    --btn-bg:#1e2a33; --btn-text:#ffc857;
+  }
+  [data-theme='dark']{
+    --bg-light:#0b1216; --card:#18242c; --muted:#cfd8dc; --accent:#66c7c7; --accent-strong:#4eb0b0;
+    --btn-bg:#1e2a33; --btn-text:#ffc857;
+  }
+  html, body {
+    height: 100%;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+    font-family: Inter, system-ui, Segoe UI, Roboto, Arial;
+    background-color: var(--bg-light) !important;
+    color: var(--muted);
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+  header, main, footer, .wrap {
+    background-color: var(--bg-light) !important;
+  }
+  .wrap{max-width:1200px;margin:20px auto;padding:18px}
+  header{position:sticky;top:0;box-shadow:0 2px 6px rgba(0,0,0,0.15);padding:12px 0;z-index:20;border-top:none;transition:background-color 0.4s ease, box-shadow 0.4s ease;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 8px;}
+  h1{font-family:Poppins,system-ui;font-weight:700;margin:0;color:var(--muted);font-size:1.35rem;transition:color 0.4s ease;}
+  .subtitle{font-size:0.95rem;color:var(--muted);margin-top:6px;transition:color 0.4s ease;}
+  .controls{display:flex;gap:8px;align-items:center}
+
+  .btn, .toggle {
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: none;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn:hover, .toggle:hover {
+    filter: brightness(1.2);
+  }
+
+  .btn:active, .toggle:active {
+    box-shadow: 0 0 12px 3px #ffc857;
+    transition: box-shadow 0.2s ease;
+  }
+
+  main{margin-top:14px}
+  .family{margin-top:20px}
+  .family h2{margin:0 0 8px 0;padding:10px;border-radius:10px;color:var(--white);display:inline-block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .card{
+    background:var(--card);
+    border-radius:12px;
+    padding:10px;
+    box-shadow:0 6px 20px rgba(11,17,22,0.06);
+    border:1px solid rgba(43,103,119,0.25);
+    transition:background-color 0.4s ease, border-color 0.4s ease;
+  }
+  .chord-title{font-weight:700;color:var(--muted);margin-bottom:8px;transition:color 0.4s ease;}
+  .kbd-wrap{background:linear-gradient(180deg,rgba(255,255,255,0.05),transparent);padding:8px;border-radius:8px}
+  svg{width:100%;height:120px;border-radius:6px;display:block;transition:background-color 0.4s ease;}
+  .note-list{margin-top:8px;color:var(--muted);font-size:0.92rem;transition:color 0.4s ease;}
+  .fam-tag{display:inline-block;padding:6px 10px;border-radius:999px;color:var(--white);font-weight:600;margin-left:8px}
+  footer{margin-top:28px;color:var(--muted);transition:color 0.4s ease;}
+  rect.white-key:hover{filter:brightness(1.08);}
+  rect.black-key:hover{filter:brightness(1.15);}
+  @media (max-width:900px){.grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr))} svg{height:90px}}
+</style>
+</head>
+<body data-theme="light">
+<div class="wrap">
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>Dicionário Visual de Acordes</h1>
+        <div class="subtitle">2 oitavas (C3..B4) • Inversões reais</div>
+      </div>
+      <div class="controls">
+        <button class="btn" id="downloadAll">⬇️ Baixar</button>
+        <button class="toggle" id="themeToggle">🌙</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="mainContent"></main>
+
+  <footer></footer>
+</div>
+
+<script>
+const SEMITONES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const START_OCTAVE=3,OCTAVES=2,START_ABS=START_OCTAVE*12,TOTAL=OCTAVES*12,END_ABS=START_ABS+TOTAL-1;
+const WHITE_W=28,WHITE_H=120,BLACK_W=18,BLACK_H=78;
+const FAMILY_COLORS={Maj:'var(--fam-maj)',Min:'var(--fam-min)',7:'var(--fam-7)',Maj7:'var(--fam-maj7)',m7:'var(--fam-m7)',m7b5:'var(--fam-m7b5)',dim7:'var(--fam-dim)'};
+const FORMULAS={Maj:[0,4,7],Min:[0,3,7],7:[0,4,7,10],Maj7:[0,4,7,11],m7:[0,3,7,10],m7b5:[0,3,6,10],dim7:[0,3,6,9]};
+const ROOTS=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const FAMILIES=[{key:'Maj',title:'Triades Maiores'},{key:'Min',title:'Triades Menores'},{key:'7',title:'Dominantes (7)'},{key:'Maj7',title:'Maiores com 7M (Maj7)'},{key:'m7',title:'Menores com 7 (m7)'},{key:'m7b5',title:'Meio-diminutos (m7♭5)'},{key:'dim7',title:'Diminutos (°7)'}];
+
+function normalize(n){const map={'DB':'C#','EB':'D#','GB':'F#','AB':'G#','BB':'A#'};let s=n.toUpperCase().replace(/\s+/g,'');return map[s]||s;}
+function semitoneOf(name){return SEMITONES.indexOf(normalize(name));}
+function absIndex(name,octave){return octave*12+semitoneOf(name);}
+function absLabel(abs){return SEMITONES[abs%12]+Math.floor(abs/12);}
+function buildChordAbs(rootName,offsets){const rootAbs=absIndex(rootName,START_OCTAVE);const arr=offsets.map(off=>rootAbs+off);for(let i=1;i<arr.length;i++){while(arr[i]<=arr[i-1])arr[i]+=12;}return arr;}
+function inversionsAbs(notesAbs){const invs=[];let v=notesAbs.slice();invs.push(v.slice());for(let k=1;k<notesAbs.length;k++){const moved=v.shift();v.push(moved+12);invs.push(v.slice());}return invs;}
+function renderKeyboardSVG(pressedAbs){const keys=[];for(let abs=START_ABS;abs<=END_ABS;abs++){const sem=abs%12;const name=SEMITONES[sem];const type=['C#','D#','F#','G#','A#'].includes(name)?'black':'white';keys.push({abs,name,type});}let whiteCount=0;const whitePos={};for(const k of keys){if(k.type==='white'){whitePos[k.abs]=whiteCount*WHITE_W;whiteCount++;}}const svgW=whiteCount*WHITE_W;let svg=`<svg viewBox="0 0 ${svgW} ${WHITE_H}" xmlns="http://www.w3.org/2000/svg">`;for(const k of keys){if(k.type==='white'){const x=whitePos[k.abs];const pressed=pressedAbs.includes(k.abs);svg+=`<rect class="white-key" x="${x}" y="0" width="${WHITE_W}" height="${WHITE_H}" rx="3" fill="${pressed?'var(--accent)':'#fff'}" stroke="#cfcfcf"/>`;svg+=`<text x="${x+WHITE_W/2}" y="${WHITE_H-8}" font-size="10" text-anchor="middle" fill="${pressed?'#fff':'#333'}">${k.name}</text>`;}}
+for(const k of keys){if(k.type==='black'){let prev=k.abs-1;while(prev>=START_ABS&&whitePos[prev]===undefined)prev--;if(prev<START_ABS)prev=START_ABS;const baseX=whitePos[prev]!==undefined?whitePos[prev]:0;const x=baseX+WHITE_W-Math.round(BLACK_W/2);const pressed=pressedAbs.includes(k.abs);svg+=`<rect class="black-key" x="${x}" y="0" width="${BLACK_W}" height="${BLACK_H}" rx="3" fill="${pressed?'var(--accent-strong)':'#000'}" stroke="#000"/>`;if(pressed)svg+=`<text x="${x+BLACK_W/2}" y="${BLACK_H-8}" font-size="9" text-anchor="middle" fill="#fff">${k.name}</text>`;}}
+svg+='</svg>';return svg;}
+
+const main=document.getElementById('mainContent');
+for(const fam of FAMILIES){const section=document.createElement('section');section.className='family';const title=document.createElement('h2');title.textContent=fam.title;title.style.background=FAMILY_COLORS[fam.key];section.appendChild(title);const grid=document.createElement('div');grid.className='grid';for(const root of ROOTS){const offsets=FORMULAS[fam.key];const baseAbs=buildChordAbs(root,offsets);const invs=inversionsAbs(baseAbs);for(let i=0;i<invs.length;i++){const inv=invs[i];const pressedInRange=inv.filter(a=>a>=START_ABS&&a<=END_ABS);if(!pressedInRange.length)continue;const card=document.createElement('div');card.className='card';const h=document.createElement('div');h.className='chord-title';const suffix=fam.key==='Min'?'m':'';const famLabel=fam.key==='Maj'?'':fam.key;const invLabel=invs.length>1?(i===0?' (fund.)':` (${i}ª inv.)`):'';h.textContent=root+suffix+(famLabel?' '+famLabel:'')+invLabel;const tag=document.createElement('span');tag.className='fam-tag';tag.style.background=FAMILY_COLORS[fam.key];tag.textContent=fam.key;h.appendChild(tag);const wrap=document.createElement('div');wrap.className='kbd-wrap';wrap.innerHTML=renderKeyboardSVG(pressedInRange);const list=document.createElement('div');list.className='note-list';list.textContent='Notas (com oitava): '+inv.map(a=>absLabel(a)).join(' — ');card.appendChild(h);card.appendChild(wrap);card.appendChild(list);grid.appendChild(card);}}section.appendChild(grid);main.appendChild(section);}
+
+document.getElementById('themeToggle').addEventListener('click',()=>{const cur=document.body.getAttribute('data-theme')==='dark'?'light':'dark';document.body.setAttribute('data-theme',cur);localStorage.setItem('mv_theme',cur);updateThemeIcon();});
+function updateThemeIcon(){const t=document.body.getAttribute('data-theme');document.getElementById('themeToggle').textContent=t==='dark'?'☀️':'🌙';}
+const saved=localStorage.getItem('mv_theme');if(saved)document.body.setAttribute('data-theme',saved);updateThemeIcon();
+
+document.getElementById('downloadAll').addEventListener('click',()=>{const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Dicionario_Acordes_Musical_Elegante.html';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);});
+</script>
+</body>
+</html>
